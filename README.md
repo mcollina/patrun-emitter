@@ -1,37 +1,37 @@
-mqemitter&nbsp;&nbsp;[![Build Status](https://travis-ci.org/mcollina/mqemitter.png)](https://travis-ci.org/mcollina/mqemitter)
+patrun-emitter&nbsp;&nbsp;[![Build Status](https://travis-ci.org/mcollina/patrun-emitter.png)](https://travis-ci.org/mcollina/patrun-emitter)
 =================================================================
 
 An Opinionated Message Queue with an emitter-style API, but with
-callbacks.
+objects as events, plus callbacks.
 
   * <a href="#install">Installation</a>
   * <a href="#basic">Basic Example</a>
   * <a href="#api">API</a>
-  * <a href="#wildcards">Wildcards</a>
   * <a href="#licence">Licence &amp; copyright</a>
 
 <a name="install"></a>
 ## Installation
 
 ```
-$ npm install mqemitter --save
+$ npm install patrun-emitter --save
 ```
 
 <a name="basic"></a>
 ## Basic Example
 
 ```js
-var mq = require('mqemitter')
+var mq = require('patrun-emitter')
   , emitter = mq({ concurrency: 5 })
   , message
 
-emitter.on('hello world', function(message, cb) {
+emitter.on({ topic: 'hello world' }, function(message, cb) {
   // call callback when you are done
   // do not pass any errors, the emitter cannot handle it.
   cb()
 })
 
-// topic is mandatory
+// topic is just a convetion
+// we can use anything else!
 message = { topic: 'hello world', payload: 'or any other fields' }
 emitter.emit(message, function() {
   // emitter will never return an error
@@ -40,42 +40,36 @@ emitter.emit(message, function() {
 
 ## API
 
-  * <a href="#mq"><code>MQEmitter</code></a>
+  * <a href="#mq"><code>PatrunEmitter</code></a>
   * <a href="#emit"><code>emitter#<b>emit()</b></code></a>
   * <a href="#on"><code>emitter#<b>on()</b></code></a>
   * <a href="#removeListener"><code>emitter#<b>removeListener()</b></code></a>
 
 -------------------------------------------------------
 <a name="mq"></a>
-### MQEmitter(opts)
+### PatrunEmitter(opts)
 
-MQEmitter is the class and function exposed by this module.
-It can be created by `MQEmitter()` or using `new MQEmitter()`.
+PatrunEmitter is the class and function exposed by this module.
+It can be created by `PatrunEmitter()` or using `new PatrunEmitter()`.
 
-An MQEmitter accepts the following options:
+An PatrunEmitter accepts the following options:
 
 - `concurrency`: the maximum number of concurrent messages that can be
   on concurrent delivery.
-- `wildcardOne`: the char that will match one level wildcards.
-- `wildcardSome`: that char that will match multiple level wildcards.
-- `separator`: the separator for the different levels.
-
-For more information on wildcards, see [this explanation](#wildcards) or
-[Qlobber](https://github.com/davedoesdev/qlobber).
 
 -------------------------------------------------------
 <a name="emit"></a>
 ### emitter.emit(message, callback())
 
-Emit the given message, which must have a `topic` property, which can contain wildcards
-as defined on creation.
+Emit the given message.
 
 -------------------------------------------------------
 <a name="on"></a>
-### emitter.on(topic, callback(message, done))
+### emitter.on(pattern, callback(message, done))
 
-Add the given callback to the passed topic. Topic can contain wildcards,
-as defined on creation.
+Add the given callback to the passed pattern, see
+[patrun](http://npm.im/patrun) for the matching rules.
+
 The `callback`, accept two parameters, the passed message and a `done`
 callback.
 
@@ -84,65 +78,9 @@ __`err`__ object.
 
 -------------------------------------------------------
 <a name="removeListener"></a>
-### emitter.removeListener(topic, callback)
+### emitter.removeListener(pattern, callback)
 
 The inverse of `on`.
-
-<a name="wildcards"></a>
-## Wildcards
-
-__MQEmitter__ supports the use of wildcards: every topic is splitted
-according to `separator` (default `/`).
-
-The wildcard character `+` matches exactly one word:
-
-```javascript
-var mq = require('mqemitter')
-  , emitter = mq()
-
-emitter.on('hello/+/world', function(message, cb) {
-  // this will print { topic: 'hello/my/world', 'something': 'more' }
-  console.log(message)
-  cb()
-})
-
-emitter.on('hello/+', function(message, cb) {
-  // this will not be called
-  console.log(message)
-  cb()
-})
-
-emitter.emit({ topic: 'hello/my/world', something: 'more' })
-```
-
-The wildcard character `#` matches zero or more words:
-
-```javascript
-var mq = require('mqemitter')
-  , emitter = mq()
-
-emitter.on('hello/#', function(message, cb) {
-  // this will print { topic: 'hello/my/world', 'something': 'more' }
-  console.log(message)
-  cb()
-})
-
-emitter.on('#', function(message, cb) {
-  // this will print { topic: 'hello/my/world', 'something': 'more' }
-  console.log(message)
-  cb()
-})
-
-emitter.on('hello/my/world/#', function(message, cb) {
-  // this will print { topic: 'hello/my/world', 'something': 'more' }
-  console.log(message)
-  cb()
-})
-
-emitter.emit({ topic: 'hello/my/world', something: 'more' })
-```
-
-Of course, you can mix `#` and `+` in the same subscription.
 
 ## LICENSE
 

@@ -20,9 +20,9 @@ var patrun = require('patrun')
   , assert = require('assert')
   , nop = function() {}
 
-function ObjectEmitter(opts) {
-  if (!(this instanceof ObjectEmitter)) {
-    return new ObjectEmitter(opts)
+function PatrunEmitter(opts) {
+  if (!(this instanceof PatrunEmitter)) {
+    return new PatrunEmitter(opts)
   }
 
   opts = opts || {}
@@ -36,14 +36,14 @@ function ObjectEmitter(opts) {
   this._matcher = patrun();
 }
 
-Object.defineProperty(ObjectEmitter.prototype, "length", {
+Object.defineProperty(PatrunEmitter.prototype, "length", {
   get: function() {
     return this._messageQueue.length;
   },
   enumerable: true
 });
 
-ObjectEmitter.prototype.on = function on(pattern, notify) {
+PatrunEmitter.prototype.on = function on(pattern, notify) {
   assert(pattern)
   assert(notify)
 
@@ -58,7 +58,7 @@ ObjectEmitter.prototype.on = function on(pattern, notify) {
   return this
 }
 
-ObjectEmitter.prototype.removeListener = function removeListener(pattern, notify) {
+PatrunEmitter.prototype.removeListener = function removeListener(pattern, notify) {
   assert(pattern)
   assert(notify)
 
@@ -78,7 +78,7 @@ ObjectEmitter.prototype.removeListener = function removeListener(pattern, notify
   return this
 }
 
-ObjectEmitter.prototype.emit = function emit(message, cb) {
+PatrunEmitter.prototype.emit = function emit(message, cb) {
   assert(message)
 
   cb = cb || nop
@@ -94,7 +94,7 @@ ObjectEmitter.prototype.emit = function emit(message, cb) {
   return this
 }
 
-ObjectEmitter.prototype._next = function next(receiver) {
+PatrunEmitter.prototype._next = function next(receiver) {
   var message = this._messageQueue.shift()
     , callback = this._messageCallbacks.shift()
 
@@ -108,7 +108,7 @@ ObjectEmitter.prototype._next = function next(receiver) {
   return this
 }
 
-ObjectEmitter.prototype._do = function(message, callback, receiver) {
+PatrunEmitter.prototype._do = function(message, callback, receiver) {
   var matches = this._matcher.find(message)
     , i
 
@@ -144,4 +144,4 @@ function CallbackReceiver(mq) {
   }
 }
 
-module.exports = ObjectEmitter
+module.exports = PatrunEmitter
