@@ -1,12 +1,14 @@
 {
-  "name": "mqemitter",
-  "version": "0.2.0",
-  "description": "An Opinionated Message Queue with an emitter-style API",
+  "name": "object-emitter",
+  "version": "0.0.1",
+  "description": "Let's just use Objects as events!",
   "main": "index.js",
   "scripts": {
     "test": "tap test.js"
   },
-  "pre-commit": ["test"],
+  "pre-commit": [
+    "test"
+  ],
   "website": "https://github.com/mcollina/mqemitter",
   "repository": {
     "type": "git",
@@ -32,6 +34,6 @@
     "pre-commit": "0.0.4"
   },
   "dependencies": {
-    "qlobber": "~0.3.8"
+    "patrun": "~0.2.0"
   }
 }

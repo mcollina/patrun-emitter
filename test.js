@@ -7,11 +7,11 @@ test('support on and emit', function(t) {
 
   var e = mq()
     , expected = {
-          topic: 'hello world'
-        , payload: { my: 'message' }
+        topic: 'hello world',
+        my: 'message'
       }
 
-  e.on('hello world', function(message, cb) {
+  e.on({ topic: 'hello world' }, function(message, cb) {
     t.equal(e.current, 1, 'number of current messages')
     t.equal(message, expected)
     t.equal(this, e)
@@ -32,12 +32,12 @@ test('support multiple subscribers', function(t) {
         , payload: { my: 'message' }
       }
 
-  e.on('hello world', function(message, cb) {
+  e.on({ topic: 'hello world' }, function(message, cb) {
     t.ok(true)
     cb()
   })
 
-  e.on('hello world', function(message, cb) {
+  e.on({ topic: 'hello world' }, function(message, cb) {
     t.ok(true)
     cb()
   })
@@ -61,22 +61,22 @@ test('queue concurrency', function(t) {
 
   t.equal(e.concurrency, 1)
 
-  e.on('hello 1', function(message, cb) {
+  e.on({ hello: 1 }, function(message, cb) {
     setTimeout(cb, 5)
   })
 
-  e.on('hello 2', function(message, cb) {
+  e.on({ hello: 2 }, function(message, cb) {
     cb()
   })
 
   start = Date.now()
-  e.emit({ topic: 'hello 1' }, function() {
+  e.emit({ hello: 1, some: 'data' }, function() {
     intermediate = Date.now()
     t.ok(intermediate - start >= 5, 'min 5 ms between start and intermediate')
     t.equal(e.length, 1)
   })
 
-  e.emit({ topic: 'hello 2' }, function() {
+  e.emit({ hello: 2, some: 'data' }, function() {
     finish = Date.now()
     t.ok(finish - intermediate < 5, 'max 5 ms between intermediate and finish')
     t.end()
@@ -90,7 +90,7 @@ test('removeListener', function(t) {
         , payload: { my: 'message' }
       }
 
-  e.on('hello world', function(message, cb) {
+  e.on({ topic: 'hello world' }, function(message, cb) {
     cb()
   })
 
@@ -99,9 +99,34 @@ test('removeListener', function(t) {
     t.end()
   }
 
-  e.on('hello world', toRemove)
+  e.on({ topic: 'hello world' }, toRemove)
 
-  e.removeListener('hello world', toRemove)
+  e.removeListener({ topic: 'hello world' }, toRemove)
+
+  e.emit(expected, function() {
+    t.end()
+  })
+})
+
+test('removeListener (bis)', function(t) {
+  var e = mq()
+    , expected = {
+          topic: 'hello world'
+        , payload: { my: 'message' }
+      }
+
+  function toRemove(message, cb) {
+    t.ok(false, 'the toRemove function must not be called')
+    t.end()
+  }
+
+  e.on({ topic: 'hello world' }, toRemove)
+
+  e.on({ topic: 'hello world' }, function ok(message, cb) {
+    cb()
+  })
+
+  e.removeListener({ topic: 'hello world' }, toRemove)
 
   e.emit(expected, function() {
     t.end()
@@ -115,7 +140,7 @@ test('without a callback on emit', function(t) {
         , payload: { my: 'message' }
       }
 
-  e.on('hello world', function(message, cb) {
+  e.on({ topic: 'hello world' }, function(message, cb) {
     cb()
     t.end()
   })
@@ -148,95 +173,31 @@ test('without any listeners and a callback', function(t) {
   })
 })
 
-test('support one level wildcard', function(t) {
+test('support multiple patterns', function(t) {
   t.plan(1)
 
   var e = mq()
     , expected = {
-          topic: 'hello/world'
+          hello: 'world'
+        , some: 'data'
         , payload: { my: 'message' }
       }
 
-  e.on('hello/+', function(message, cb) {
-    t.equal(message.topic, 'hello/world')
+  e.on({ 
+      hello: 'world'
+    , some: 'data'
+  }, function(message, cb) {
+    t.deepEqual(message, expected)
     cb()
   })
 
   // this will not be catched
-  e.emit({ topic: 'hello/my/world' })
+  e.emit({
+      hello: 'matteo'
+    , some: 'data'
+  })
 
   // this will be catched
   e.emit(expected)
 })
 
-test('support changing one level wildcard', function(t) {
-  t.plan(1)
-
-  var e = mq({ wildcardOne: '~' })
-    , expected = {
-          topic: 'hello/world'
-        , payload: { my: 'message' }
-      }
-
-  e.on('hello/~', function(message, cb) {
-    t.equal(message.topic, 'hello/world')
-    cb()
-  })
-
-  e.emit(expected, function() {
-    t.end()
-  })
-})
-
-test('support deep wildcard', function(t) {
-  t.plan(1)
-
-  var e = mq()
-    , expected = {
-          topic: 'hello/my/world'
-        , payload: { my: 'message' }
-      }
-
-  e.on('hello/#', function(message, cb) {
-    t.equal(message.topic, 'hello/my/world')
-    cb()
-  })
-
-  e.emit(expected)
-})
-
-test('support changing deep wildcard', function(t) {
-  t.plan(1)
-
-  var e = mq({ wildcardSome: '*' })
-    , expected = {
-          topic: 'hello/my/world'
-        , payload: { my: 'message' }
-      }
-
-  e.on('hello/*', function(message, cb) {
-    t.equal(message.topic, 'hello/my/world')
-    cb()
-  })
-
-  e.emit(expected)
-})
-
-test('support changing the level separator', function(t) {
-  t.plan(1)
-
-  var e = mq({ separator: '~' })
-    , expected = {
-          topic: 'hello~world'
-        , payload: { my: 'message' }
-      }
-
-  e.on('hello~+', function(message, cb) {
-    t.equal(message.topic, 'hello~world')
-    cb()
-  })
-
-  e.emit(expected, function() {
-    t.end()
-  })
-})

@@ -16,20 +16,16 @@
 
 "use strict";
 
-var Qlobber = require('qlobber').Qlobber
+var patrun = require('patrun')
   , assert = require('assert')
   , nop = function() {}
 
-function MQEmitter(opts) {
-  if (!(this instanceof MQEmitter)) {
-    return new MQEmitter(opts)
+function ObjectEmitter(opts) {
+  if (!(this instanceof ObjectEmitter)) {
+    return new ObjectEmitter(opts)
   }
 
   opts = opts || {}
-
-  opts.wildcardOne = opts.wildcardOne || '+'
-  opts.wildcardSome = opts.wildcardSome || '#'
-  opts.separator = opts.separator || '/'
 
   this._messageQueue = []
   this._messageCallbacks = []
@@ -37,37 +33,52 @@ function MQEmitter(opts) {
   this.concurrency = opts.concurrency
 
   this.current = 0
-  this._matcher = new Qlobber({
-      separator: opts.separator
-    , wildcard_one: opts.wildcardOne
-    , wildcard_some: opts.wildcardSome
-  })
+  this._matcher = patrun();
 }
 
-Object.defineProperty(MQEmitter.prototype, "length", {
+Object.defineProperty(ObjectEmitter.prototype, "length", {
   get: function() {
     return this._messageQueue.length;
   },
   enumerable: true
 });
 
-MQEmitter.prototype.on = function on(topic, notify) {
-  assert(topic)
+ObjectEmitter.prototype.on = function on(pattern, notify) {
+  assert(pattern)
   assert(notify)
-  this._matcher.add(topic, notify)
+
+  var matches = this._matcher.find(pattern, true)
+
+  if (matches) {
+    matches.push(notify)
+  } else {
+    this._matcher.add(pattern, [notify])
+  }
 
   return this
 }
 
-MQEmitter.prototype.removeListener = function removeListener(topic, notify) {
-  assert(topic)
+ObjectEmitter.prototype.removeListener = function removeListener(pattern, notify) {
+  assert(pattern)
   assert(notify)
-  this._matcher.remove(topic, notify)
+
+  var matches = this._matcher.find(pattern, true)
+    , i
+
+  if (matches) {
+    i = matches.indexOf(notify)
+
+    matches.splice(i, 1)
+
+    if (matches.length === 0) {
+      this._matcher.remove(pattern)
+    }
+  }
 
   return this
 }
 
-MQEmitter.prototype.emit = function emit(message, cb) {
+ObjectEmitter.prototype.emit = function emit(message, cb) {
   assert(message)
 
   cb = cb || nop
@@ -83,7 +94,7 @@ MQEmitter.prototype.emit = function emit(message, cb) {
   return this
 }
 
-MQEmitter.prototype._next = function next(receiver) {
+ObjectEmitter.prototype._next = function next(receiver) {
   var message = this._messageQueue.shift()
     , callback = this._messageCallbacks.shift()
 
@@ -97,11 +108,11 @@ MQEmitter.prototype._next = function next(receiver) {
   return this
 }
 
-MQEmitter.prototype._do = function(message, callback, receiver) {
-  var matches = this._matcher.match(message.topic)
+ObjectEmitter.prototype._do = function(message, callback, receiver) {
+  var matches = this._matcher.find(message)
     , i
 
-  if (matches.length === 0) {
+  if (!matches || matches.length === 0) {
     callback()
     return this._next(receiver)
   }
@@ -133,4 +144,4 @@ function CallbackReceiver(mq) {
   }
 }
 
-module.exports = MQEmitter
+module.exports = ObjectEmitter
